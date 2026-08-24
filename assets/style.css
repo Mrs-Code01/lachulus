@@ -1,0 +1,713 @@
+/* =========================================================================
+   Lachulus on Tour — Landingpage
+
+   Farbwelt, Schrift und Aufbau folgen dem Entwurf
+   `lachulus-landingpage-entwurf.html`. Übernommen sind Mitternachtsblau als
+   Grund, das warme Off-White, die vier Akzente (Gold, Koralle, Türkis,
+   Himmel), Fraunces für Display und Inter für den Fließtext.
+
+   Verfeinert wurden nur Details, die der Entwurf offen liess: eine kräftigere
+   Headline, ein Deckel über die Viewport-Höhe, damit die Seite auf jedem
+   Fenster auf einen Bildschirm passt, und die Sicherheitsabstände für Geräte
+   mit Aussparung.
+
+   Schriften sind selbst gehostet statt von Google geladen — der Entwurf
+   verlinkt fonts.googleapis.com, was das LG München I 2022 als
+   DSGVO-Verstoß gewertet hat (Az. 3 O 17493/20).
+   ========================================================================= */
+
+/* --- Webfonts ---------------------------------------------------------- */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url('fonts/fraunces-600-700-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url('fonts/fraunces-600-700-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Fraunces';
+  font-style: italic;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url('fonts/fraunces-italic-600-700-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Fraunces';
+  font-style: italic;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url('fonts/fraunces-italic-600-700-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('fonts/inter-400-600-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('fonts/inter-400-600-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* --- Tokens (aus dem Entwurf) ------------------------------------------ */
+:root {
+  --bg:        #0B0E17;
+  --bg-2:      #12172A;
+  --gold:      #F2B84B;
+  --coral:     #FF7A6B;
+  --teal:      #48C9B0;
+  --sky:       #6FB1FF;
+  --text:      #F6F3EC;
+  --text-dim:  rgba(246, 243, 236, .68);
+  --hairline:  rgba(246, 243, 236, .18);
+
+  --scrim: 11, 14, 23;
+
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --pad:    clamp(1.15rem, 5vw, 3.25rem);
+  --radius: 30px;
+}
+
+/* --- Grundlagen -------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Kein overflow-x auf html: das macht das Wurzelelement zum Scroll-Container
+   und lässt die Viewport-Einheiten in manchen Browsern kleiner ausfallen als
+   den sichtbaren Bereich. Seitliches Überlaufen verhindern stattdessen
+   grid-template-columns: 100%, min-width: 0 und die max-width-Regeln. */
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: clamp(1rem, .95rem + .2vw, 1.0625rem);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+img, svg, video { display: block; max-width: 100%; }
+
+a { color: inherit; }
+
+:where(a, button):focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skip-link {
+  position: absolute;
+  top: .6rem; left: .6rem;
+  z-index: 20;
+  transform: translateY(-160%);
+  padding: .7rem 1.1rem;
+  border-radius: var(--radius);
+  background: var(--gold);
+  color: var(--bg);
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform .18s ease;
+}
+.skip-link:focus { transform: translateY(0); }
+
+/* =========================================================================
+   Bühne — der Vollbild-Videohintergrund
+   ========================================================================= */
+.stage {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  /* minmax(0, 1fr) statt 1fr: eine reine 1fr-Zeile wird nie kleiner als ihr
+     Inhalt. Auf niedrigen Fenstern wüchse die Bühne sonst über die
+     Bildschirmhöhe hinaus, die Seite bekäme eine Bildlaufleiste, und der CTA
+     spränge beim Klick auf #kontakt in diesen Rest hinein. */
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-columns: 100%;
+  width: 100%;
+  /* Drei Stufen, absteigend nach Alter des Browsers. Entscheidend ist die
+     letzte: dvh ist immer genau der sichtbare Bereich. */
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  /* clip statt hidden — der Unterschied ist entscheidend: „hidden" macht die
+     Bühne zu einem Scroll-Container. Die verborgene Fußleiste liegt ausserhalb
+     dieses Kastens, und der Sprung auf #kontakt scrollt dann die Bühne selbst
+     dorthin — das Logo wandert oben aus dem Bild. „clip" schneidet genauso ab,
+     erzeugt aber gar keinen Scroll-Container. */
+  overflow: hidden;
+  overflow: clip;
+}
+
+/* Rasterkinder dürfen das Raster nicht aufspannen: sonst wird die Spalte
+   breiter als der Viewport und die ganze Seite scrollt seitlich. */
+.stage > * { min-width: 0; }
+
+/* Ebene 1 — Rückfallebene bis das Video spielt. Der Farbverlauf stammt aus
+   dem Entwurf und bleibt als Platzhalter erhalten. */
+.stage__sky {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 122, 107, .35), transparent 45%),
+    radial-gradient(circle at 80% 30%, rgba(111, 177, 255, .30), transparent 50%),
+    radial-gradient(circle at 50% 85%, rgba(72, 201, 176, .30), transparent 55%),
+    linear-gradient(135deg, #171C2F, #0B0E17 70%);
+  background-size: 200% 200%;
+  animation: drift 18s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%   { background-position: 0% 0%; }
+  50%  { background-position: 100% 60%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* Ebene 2 — das Video. Dauerhaft sichtbar: bis das erste Bild dekodiert ist,
+   zeigt das Element von sich aus das poster-Bild, eine Einblendung per
+   JavaScript ist dafür nicht nötig. Fehlt das Video, scheint der Farbverlauf
+   darunter durch. */
+.stage__video {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* Ebene 3 — Abdunklung. Verlauf aus dem Entwurf, ergänzt um eine sehr weiche
+   Aufhellungsbremse in der Mitte, damit die Headline auch über hellen
+   Videobildern sicher lesbar bleibt. */
+.stage__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    /* Kräftiger als im Entwurf: das gelieferte Video trägt in der Bildmitte
+       selbst Schrift (den Studio-Schriftzug). Ohne diese Abdunklung liegt
+       Text auf Text. Sobald ein ruhigerer Hintergrundclip vorliegt, können
+       die drei Werte wieder Richtung .42 / .20 / 0 zurückgenommen werden. */
+    radial-gradient(125% 88% at 50% 47%,
+      rgba(var(--scrim), .78) 0%,
+      rgba(var(--scrim), .55) 45%,
+      rgba(var(--scrim), .18) 78%,
+      rgba(var(--scrim), 0) 100%),
+    linear-gradient(180deg,
+      rgba(var(--scrim), .55) 0%,
+      rgba(var(--scrim), .15) 30%,
+      rgba(var(--scrim), .35) 65%,
+      rgba(var(--scrim), .92) 100%);
+}
+
+/* =========================================================================
+   Kopfzeile — Logo links, Einordnung rechts
+   ========================================================================= */
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .75rem 1rem;
+  /* viewport-fit=cover lässt die Seite bis unter Kamera-Aussparung und
+     Home-Leiste laufen. env() holt genau diesen Rand zurück. */
+  padding:
+    calc(clamp(1rem, 3vh, 1.75rem) + env(safe-area-inset-top, 0px))
+    calc(var(--pad) + env(safe-area-inset-right, 0px))
+    0
+    calc(var(--pad) + env(safe-area-inset-left, 0px));
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.15rem, 1rem + .7vw, 1.5rem);
+  letter-spacing: .04em;
+  line-height: 1;
+  text-decoration: none;
+  color: var(--text);
+}
+.logo span { color: var(--gold); }
+
+.top-tag {
+  padding: .4rem .9rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  font-size: clamp(.66rem, .62rem + .16vw, .75rem);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* =========================================================================
+   Headline-Block
+   ========================================================================= */
+.pitch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(.55rem, 1.9vh, 1.15rem);
+  padding: clamp(.5rem, 1.6vh, 1rem) var(--pad);
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--gold);
+  font-size: clamp(.7rem, .65rem + .2vw, .82rem);
+  font-weight: 600;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  text-indent: .3em;
+}
+
+.headline {
+  margin: 0;
+  max-width: min(16ch, 100%);
+  font-family: var(--font-display);
+  font-weight: 700;
+  /* Der Entwurf deckelt bei 92px. Etwas kräftiger, aber zusätzlich über die
+     Höhe gedeckelt — sonst schiebt die Headline auf flachen Fenstern den
+     CTA aus dem Bild. */
+  font-size: clamp(2.35rem, min(8.2vw, 17vh), 6.75rem);
+  line-height: 1.02;
+  letter-spacing: -.015em;
+  text-wrap: balance;
+  text-shadow: 0 2px 28px rgba(var(--scrim), .55);
+}
+.headline .accent {
+  color: var(--coral);
+  font-style: italic;
+}
+
+.subline {
+  margin: 0;
+  max-width: 35rem;
+  color: var(--text-dim);
+  font-size: clamp(.9rem, .85rem + .35vw, 1.125rem);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* Vier gleichrangige Neuheiten, je ein Akzent — wie im Entwurf. */
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .55rem;
+  margin: .25rem 0 0;
+  padding: 0;
+  list-style: none;
+  max-width: min(42rem, 100%);
+}
+
+.badge {
+  padding: .5rem 1.1rem;
+  border-radius: var(--radius);
+  color: var(--bg);
+  font-size: clamp(.76rem, .72rem + .18vw, .82rem);
+  font-weight: 600;
+  letter-spacing: .03em;
+  white-space: nowrap;
+}
+.badge:nth-child(1) { background: var(--gold); }
+.badge:nth-child(2) { background: var(--coral); }
+.badge:nth-child(3) { background: var(--teal); }
+.badge:nth-child(4) { background: var(--sky); }
+
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .8rem;
+  margin-top: clamp(.5rem, 1.8vh, 1.15rem);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .85rem 1.85rem;
+  border: 1px solid transparent;
+  border-radius: 40px;
+  font-size: clamp(.86rem, .82rem + .18vw, .95rem);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease, color .15s ease;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn svg { flex: none; }
+
+.btn--primary {
+  background: var(--text);
+  color: var(--bg);
+}
+.btn--primary:hover { background: var(--gold); }
+
+/* Zweitbutton („Mehr erfahren") aus dem Entwurf. Das Briefing nennt unter
+   „Headline-Block" ausdrücklich nur einen CTA, deshalb steht er nicht im
+   Markup. Die Regeln bleiben stehen, damit er sich mit einer Zeile HTML
+   zurückholen lässt. */
+.btn--ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: rgba(246, 243, 236, .4);
+}
+.btn--ghost:hover { border-color: var(--text); background: rgba(246, 243, 236, .1); }
+
+/* =========================================================================
+   Fußleiste
+   ========================================================================= */
+/* Dünne Leiste am unteren Rand, dauerhaft sichtbar — wie im Briefing und im
+   Entwurf. Impressum und Datenschutz sind damit ohne Umweg erreichbar, was
+   die Anbieterkennzeichnung ohnehin verlangt. */
+.footer {
+  position: relative;
+  border-top: 1px solid rgba(246, 243, 236, .12);
+  background: rgba(var(--scrim), .55);
+  -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: blur(12px);
+}
+
+.footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .65rem 1.25rem;
+  /* Die Home-Leiste des iPhones läge sonst auf den Kontakt-Schaltflächen. */
+  padding:
+    .9rem
+    calc(var(--pad) + env(safe-area-inset-right, 0px))
+    calc(.9rem + env(safe-area-inset-bottom, 0px))
+    calc(var(--pad) + env(safe-area-inset-left, 0px));
+  font-size: .78rem;
+  color: var(--text-dim);
+}
+
+.footer__legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem 1.1rem;
+}
+.footer__legal a {
+  text-decoration: none;
+  transition: color .15s ease;
+}
+.footer__legal a:hover { color: var(--text); }
+
+.footer__contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .5rem .95rem;
+  border-radius: var(--radius);
+  background: rgba(246, 243, 236, .08);
+  color: var(--text);
+  font-size: .78rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .15s ease;
+}
+.icon-btn:hover { background: rgba(246, 243, 236, .16); }
+.icon-btn svg { flex: none; width: 14px; height: 14px; }
+
+/* Damit die Beschriftung bei flex: 1 1 0 auf schmalen Geräten nie aus der
+   Schaltfläche läuft, sondern sauber abgeschnitten wird. */
+.icon-btn span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* Breite Ansicht: volle Adresse. Die Kurzform steckt im Markup und wartet. */
+.icon-btn__short { display: none; }
+
+/* =========================================================================
+   Rechtstexte — Impressum & Datenschutz
+   ========================================================================= */
+.doc {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.doc__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .8rem;
+  padding: 1.05rem var(--pad);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.doc__back {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  font-size: .86rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--gold);
+}
+.doc__back:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.doc__body {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: clamp(2rem, 6vw, 3.75rem) var(--pad) clamp(3rem, 8vw, 5rem);
+}
+
+.doc__body h1 {
+  margin: 0 0 1.75rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.9rem, 1.5rem + 2vw, 2.7rem);
+  line-height: 1.1;
+  letter-spacing: -.015em;
+  text-wrap: balance;
+}
+
+.doc__body h2 {
+  margin: 2.5rem 0 .6rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.15rem, 1.05rem + .45vw, 1.4rem);
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.doc__body h3 {
+  margin: 1.7rem 0 .35rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.doc__body p, .doc__body li { max-width: 65ch; }
+.doc__body p { margin: 0 0 1rem; }
+.doc__body ul { margin: 0 0 1rem; padding-left: 1.15rem; }
+.doc__body li { margin-bottom: .35rem; }
+
+.doc__body a { color: #9A5A2B; text-underline-offset: 3px; }
+.doc__body a:hover { color: var(--bg); }
+
+.doc__lead { font-size: 1.05rem; color: #5C5A55; }
+
+.doc__address {
+  margin: 0 0 1rem;
+  font-style: normal;
+  line-height: 1.75;
+}
+
+.doc__updated {
+  margin-top: 2.75rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid #DDD9D0;
+  font-size: .84rem;
+  color: #5C5A55;
+}
+
+/* Redaktionshinweis: sichtbar, damit er vor dem Livegang nicht untergeht. */
+.note {
+  margin: 1.1rem 0 1.5rem;
+  padding: .95rem 1.15rem;
+  border-left: 3px solid var(--gold);
+  background: #F0EADC;
+  color: #4A3A16;
+  font-size: .9rem;
+}
+.note p { margin: 0 0 .5rem; max-width: 62ch; }
+.note p:last-child { margin: 0; }
+
+/* =========================================================================
+   Bedienungshilfen
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .stage__scrim { background: rgba(var(--scrim), .78); }
+  .subline, .footer__inner { color: var(--text); }
+  .top-tag { border-color: var(--text); color: var(--text); }
+}
+
+/* --- Mittlere Viewports: Tablet und schmales Desktop-Fenster ------------
+   Zwischen Handy und Notebook fehlte bisher jede Stufe: die Fußleiste lief
+   bis 40rem einzeilig, brach dabei aber schon deutlich früher um — Rechtliches
+   links, Kontakt darunter linksbündig. Das sah nach Unfall aus. Ab hier wird
+   der Umbruch bewusst gesetzt und mittig ausgerichtet. */
+@media (max-width: 52rem) {
+  .footer__inner {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: .6rem;
+  }
+  /* Kontakt zuerst: die Schaltflächen sind das Ziel des CTA (#kontakt). */
+  .footer__contact { order: 1; justify-content: center; width: 100%; }
+  .footer__legal   { order: 2; justify-content: center; gap: .3rem 1rem; }
+}
+
+/* Die Einordnung neben dem Logo wird hier schmaler, statt umzubrechen. */
+@media (max-width: 46rem) {
+  .top-tag { letter-spacing: .1em; padding: .35rem .7rem; }
+  .pitch { gap: clamp(.5rem, 1.6vh, .95rem); }
+}
+
+/* --- Kleine Viewports --------------------------------------------------- */
+@media (max-width: 40rem) {
+  /* Die Einordnung bleibt auch auf dem Handy stehen: sie ist die einzige
+     Stelle, die das Angebot beim Namen nennt. Statt sie auszublenden wird sie
+     mit der Breite kleiner, damit sie neben der Wortmarke in einer Zeile
+     bleibt statt umzubrechen. */
+  .masthead { column-gap: .6rem; }
+  .top-tag {
+    font-size: clamp(.52rem, .34rem + 1.05vw, .68rem);
+    letter-spacing: .05em;
+    padding: .3rem .5rem;
+  }
+
+  .headline { max-width: min(13ch, 100%); }
+  .subline { font-size: .95rem; }
+
+  /* Zwei mal zwei statt drei plus einer — ein allein stehendes Schild
+     unter einer vollen Zeile sieht nach Umbruchunfall aus. */
+  .badges { max-width: 19rem; }
+
+  .cta-row { width: 100%; flex-direction: column; align-items: stretch; }
+  .btn { justify-content: center; }
+
+  .footer__inner { align-items: stretch; gap: .55rem; }
+  .footer__legal { gap: .3rem .85rem; }
+  .footer__contact { flex-wrap: nowrap; }
+
+  /* Beide Schaltflächen nebeneinander in eine Zeile — die Leiste bleibt schmal. */
+  .icon-btn { flex: 1 1 0; min-width: 0; justify-content: center; padding: .5rem .6rem; }
+  .icon-btn__long { display: none; }
+  .icon-btn__short { display: inline; }
+}
+
+/* --- Einordnung unter die Wortmarke ------------------------------------
+   Ab 430px abwärts reicht die Zeile nicht mehr für Wortmarke und Einordnung
+   nebeneinander, ohne die Einordnung so weit zu schrumpfen, dass sie kaum
+   noch zu lesen ist. Sie rückt deshalb darunter — beide mittig, als zentriertes
+   Lockup aus Wortmarke und Einordnung. Auf der eigenen Zeile ist wieder Platz,
+   deshalb wird die Einordnung hier gleichzeitig wieder größer. */
+@media (max-width: 430px) {
+  .masthead {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: .5rem;
+  }
+
+  .top-tag {
+    font-size: clamp(.6rem, .42rem + .9vw, .72rem);
+    letter-spacing: .1em;
+    padding: .32rem .8rem;
+  }
+}
+
+/* --- Sehr schmale Geräte (ab iPhone SE abwärts) -------------------------
+   Unter 23rem (368px) reicht die Breite für nichts mehr im Überfluss. Statt
+   Elemente zu entfernen wird hier nur enger gesetzt. */
+@media (max-width: 23rem) {
+  .masthead { padding-left: calc(.9rem + env(safe-area-inset-left, 0px));
+              padding-right: calc(.9rem + env(safe-area-inset-right, 0px)); }
+  .pitch { padding-left: .9rem; padding-right: .9rem; }
+
+  .eyebrow { letter-spacing: .22em; }
+  .badges { gap: .4rem; max-width: 100%; }
+  .badge { padding: .42rem .8rem; font-size: .72rem; }
+
+  .footer__inner { padding-left: calc(.9rem + env(safe-area-inset-left, 0px));
+                   padding-right: calc(.9rem + env(safe-area-inset-right, 0px)); }
+  .footer__legal { font-size: .72rem; }
+  .icon-btn { font-size: .72rem; padding: .5rem .45rem; gap: .35rem; }
+}
+
+
+/* --- Flache Fenster ------------------------------------------------------
+   Handy im Querformat, aber auch ein niedriges Desktop-Fenster. Die Höhe ist
+   hier der knappe Platz, nicht die Breite — deshalb ohne Orientierungsabfrage.
+   Alles muss auf einen Bildschirm passen: sobald die Seite scrollt, springt
+   der CTA beim Klick in den freien Rest unterhalb der Fußleiste. */
+@media (max-height: 40rem) {
+  .badge { padding: .38rem .85rem; }
+  .btn { padding: .6rem 1.4rem; }
+  .footer__inner { padding-top: .55rem; padding-bottom: calc(.55rem + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* Schmal UND flach zugleich: hier bricht die Headline auf zwei Zeilen um, und
+   zwei Zeilen mal Höhe sprengen den Bildschirm. Nur in diesem Fenster wird sie
+   zusätzlich gedeckelt — breite flache Fenster behalten ihre Größe. */
+@media (max-height: 40rem) and (max-width: 48rem) {
+  .headline { font-size: clamp(2rem, min(8.2vw, 12vh), 6.75rem); }
+}
+
+/* Erst wenn es wirklich eng wird, weicht die Subline. Sie gehört zum Entwurf
+   und darf auf einem normalen Notebook-Fenster nicht verschwinden. */
+@media (max-height: 34rem) {
+  .subline { display: none; }
+}
+
+@media (max-height: 30rem) {
+  /* Die Einordnung teilt sich die Zeile mit der Wortmarke und kostet hier
+     keine Höhe — sie bleibt also auch im Querformat stehen. */
+  .top-tag { font-size: .6rem; padding: .25rem .5rem; }
+  .badges { gap: .35rem; }
+  .badge { font-size: .72rem; padding: .3rem .7rem; }
+  .masthead { padding-top: .55rem; }
+  .btn { padding: .52rem 1.2rem; }
+  .cta-row { margin-top: .3rem; }
+  .footer__inner { padding-top: .4rem; padding-bottom: calc(.4rem + env(safe-area-inset-bottom, 0px)); }
+}
+

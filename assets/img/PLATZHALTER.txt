@@ -1,0 +1,11 @@
+Noch offen:
+
+  og-image.jpg   1200 x 630   Vorschaubild für geteilte Links (WhatsApp,
+                              LinkedIn, Facebook). Wird in index.html in den
+                              Open-Graph-Angaben bereits referenziert.
+
+  logo.svg       optional     Finales Logo. Ersetzt die Wortmarke in der
+                              Kopfzeile von index.html - siehe README.md,
+                              Abschnitt „Logo austauschen".
+
+Vorhanden: favicon.svg, poster.jpg (erstes Bild der Videoschleife).

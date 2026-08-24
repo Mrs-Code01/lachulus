@@ -1,0 +1,71 @@
+# =============================================================================
+# Lachulus Landingpage — Apache-Konfiguration
+#
+# Für Apache-Hosting (der Normalfall bei deutschen Shared-Hostern). Läuft die
+# Seite auf nginx, sind dieselben Regeln in der Server-Konfiguration zu setzen;
+# diese Datei bleibt dort wirkungslos und kann gelöscht werden.
+# =============================================================================
+
+# --- MIME-Typen --------------------------------------------------------------
+# Ältere Apache-Installationen kennen diese Typen nicht. Fehlt der Typ für
+# .woff2, lädt der Browser die Schrift trotzdem, aber ohne Komprimierung;
+# fehlt er für .webm, spielt das Video gar nicht.
+<IfModule mod_mime.c>
+  AddType video/mp4                     .mp4
+  AddType video/webm                    .webm
+  AddType font/woff2                    .woff2
+  AddType image/svg+xml                 .svg
+  AddType text/css                      .css
+</IfModule>
+
+# --- Komprimierung -----------------------------------------------------------
+# Video, Bilder und Schriften sind bereits komprimiert und werden bewusst
+# ausgelassen — ein zweiter Durchlauf kostet nur CPU.
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain
+  AddOutputFilterByType DEFLATE application/javascript text/javascript
+  AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# --- Browser-Cache -----------------------------------------------------------
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  # Schriften und Video ändern sich nie. Bei einem Austausch bekommt die Datei
+  # einen neuen Namen — sonst sehen wiederkehrende Besucher ein Jahr lang die
+  # alte Fassung.
+  ExpiresByType font/woff2              "access plus 1 year"
+  ExpiresByType video/mp4               "access plus 1 year"
+  ExpiresByType video/webm              "access plus 1 year"
+
+  ExpiresByType image/jpeg              "access plus 1 month"
+  ExpiresByType image/png               "access plus 1 month"
+  ExpiresByType image/svg+xml           "access plus 1 month"
+
+  # Kurz, damit Textkorrekturen an Impressum und Datenschutz schnell ankommen.
+  ExpiresByType text/css                "access plus 1 week"
+  ExpiresByType text/html               "access plus 10 minutes"
+</IfModule>
+
+# --- Sicherheits-Header ------------------------------------------------------
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Die Seite braucht keine dieser Schnittstellen. Das Abschalten ist zugleich
+  # ein belegbares Argument für die Aussage in der Datenschutzerklärung.
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), interest-cohort=()"
+</IfModule>
+
+# --- HTTPS erzwingen ---------------------------------------------------------
+# Die Datenschutzerklärung sagt zu, dass die Seite verschlüsselt ausgeliefert
+# wird. Sobald das Zertifikat eingerichtet ist, bitte einkommentieren.
+#
+# <IfModule mod_rewrite.c>
+#   RewriteEngine On
+#   RewriteCond %{HTTPS} !=on
+#   RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+# </IfModule>
+
+# --- Verzeichnisauflistung verhindern ----------------------------------------
+Options -Indexes
