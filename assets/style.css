@@ -179,20 +179,41 @@ a { color: inherit; }
   position: absolute;
   inset: 0;
   z-index: -3;
+  overflow: hidden;
+  overflow: clip;
+  background: linear-gradient(135deg, #171C2F, #0B0E17 70%);
+}
+
+/* Die drei Farbwolken liegen auf einer eigenen, bewusst zu grossen Ebene und
+   werden per transform verschoben.
+
+   Vorher lief die Bewegung über background-position. Das lässt sich nicht an
+   den Compositor auslagern: der Hauptthread muss bei jedem einzelnen Bild die
+   vollflächige Fläche neu berechnen und zeichnen. Gemessen waren das 466
+   Stil-Neuberechnungen in acht Sekunden — 60 pro Sekunde, also bei jedem Bild
+   — und genau davon kam das Ruckeln, das man dem Video ansah. Eine
+   transform-Animation kostet den Hauptthread nichts. */
+.stage__sky::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
   background:
     radial-gradient(circle at 20% 20%, rgba(255, 122, 107, .35), transparent 45%),
     radial-gradient(circle at 80% 30%, rgba(111, 177, 255, .30), transparent 50%),
-    radial-gradient(circle at 50% 85%, rgba(72, 201, 176, .30), transparent 55%),
-    linear-gradient(135deg, #171C2F, #0B0E17 70%);
-  background-size: 200% 200%;
+    radial-gradient(circle at 50% 85%, rgba(72, 201, 176, .30), transparent 55%);
   animation: drift 18s ease-in-out infinite;
 }
 
 @keyframes drift {
-  0%   { background-position: 0% 0%; }
-  50%  { background-position: 100% 60%; }
-  100% { background-position: 0% 0%; }
+  0%   { transform: translate3d(0, 0, 0); }
+  50%  { transform: translate3d(7%, 5%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
 }
+
+/* Sobald das Video läuft, ist diese Fläche vollständig verdeckt — dann braucht
+   sich dort auch nichts mehr zu bewegen. Die Klasse setzt das Skript in
+   index.html. */
+.stage.is-playing .stage__sky::before { animation: none; }
 
 /* Ebene 2 — das Video. Dauerhaft sichtbar: bis das erste Bild dekodiert ist,
    zeigt das Element von sich aus das poster-Bild, eine Einblendung per

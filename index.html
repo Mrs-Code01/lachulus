@@ -98,6 +98,7 @@
           - Auf schlechter Verbindung bleibt der Puffer stehen („stalled").
       */
       (function () {
+        var stage = document.querySelector('.stage');
         var video = document.getElementById('bg-video');
         var webm = document.getElementById('src-webm');
         var mp4 = document.getElementById('src-mp4');
@@ -116,15 +117,11 @@
         function pick(el) {
           return (small && el.getAttribute('data-src-small')) || el.getAttribute('data-src');
         }
-        webm.src = pick(webm);
-        mp4.src = pick(mp4);
 
         /* Safari übernimmt das muted-Attribut nach einem load() nicht
            zuverlässig — und ohne muted verweigert jeder Browser das Autoplay. */
         video.muted = true;
         video.defaultMuted = true;
-
-        video.load();
 
         function attempt() {
           if (!video.paused) return;
@@ -133,6 +130,18 @@
              gesperrten Autoplay einen unbehandelten Fehler. */
           if (p && p.catch) p.catch(function () { });
         }
+
+        /* Läuft das Video, ist die Farbfläche darunter vollständig verdeckt.
+           Die Klasse hält deren Animation an — das spart auf schwacher
+           Hardware den gesamten Aufwand für etwas Unsichtbares. */
+        video.addEventListener('playing', function () {
+          if (stage) stage.classList.add('is-playing');
+        });
+        ['error', 'emptied'].forEach(function (ev) {
+          video.addEventListener(ev, function () {
+            if (stage) stage.classList.remove('is-playing');
+          });
+        });
 
         /* Sobald genug Daten da sind — Safari startet sonst gelegentlich nicht,
            obwohl autoplay im Markup steht. */
@@ -149,9 +158,9 @@
         /* Einmalig vom WebM auf das MP4 wechseln. */
         var switched = false;
         function fallbackToMp4() {
-          if (switched || !webm.parentNode) return;
+          if (switched) return;
           switched = true;
-          webm.remove();
+          if (webm.parentNode) webm.remove();
           video.load();
           attempt();
         }
@@ -173,9 +182,9 @@
         }, true);
 
         /* Wächter: wer nach sechs Sekunden noch kein einziges Bild dekodiert
-           hat, bekommt das MP4 — das ist der WebM-Fall auf dem iPhone. */
+           hat, bekommt das MP4. */
         setTimeout(function () {
-          if (video.readyState < 2) fallbackToMp4();
+          if (video.readyState < 2) { if (switched) attempt(); else fallbackToMp4(); }
         }, 6000);
 
         /* Letzte Rettung für den iOS-Stromsparmodus: die erste Berührung der
@@ -186,7 +195,50 @@
           document.addEventListener(ev, attempt, once);
         });
 
-        attempt();
+        function start(useWebm) {
+          if (useWebm) {
+            webm.src = pick(webm);
+          } else {
+            switched = true;
+            webm.remove();
+          }
+          mp4.src = pick(mp4);
+          video.load();
+          attempt();
+        }
+
+        /*
+          VP9 lohnt sich nur dort, wo die Grafikeinheit es selbst dekodiert.
+          iPhones haben keinen VP9-Decoder in Hardware: Safari meldet die Datei
+          zwar als abspielbar, rechnet sie dann aber auf der CPU — daher das
+          Ruckeln und der heisse Akku. mediaCapabilities beantwortet genau
+          diese Frage: powerEfficient sagt, ob in Hardware dekodiert wird,
+          smooth, ob es die Bildrate hält.
+
+          Ist die Abfrage nicht vorhanden oder unsicher, gewinnt H.264. Das
+          dekodiert praktisch jedes Gerät seit Jahren in Hardware — 250 kB
+          mehr auf dem Handy sind der Preis für ein Video, das nicht stockt.
+        */
+        var mc = navigator.mediaCapabilities;
+        if (mc && mc.decodingInfo) {
+          mc.decodingInfo({
+            type: 'file',
+            video: {
+              contentType: small ? 'video/webm; codecs="vp09.00.30.08"'
+                                 : 'video/webm; codecs="vp09.00.31.08"',
+              width: small ? 854 : 1280,
+              height: small ? 480 : 720,
+              bitrate: small ? 440000 : 1000000,
+              framerate: 24
+            }
+          }).then(function (info) {
+            start(!!(info && info.supported && info.smooth && info.powerEfficient));
+          }, function () {
+            start(false);
+          });
+        } else {
+          start(false);
+        }
       })();
     </script>
 
