@@ -254,13 +254,55 @@ a { color: inherit; }
       rgba(var(--scrim), .92) 100%);
 }
 
+/* --- Der Blick auf die Zeichentrickwelt ---------------------------------
+   Die Abdunklung oben ist der Ruhezustand: ohne Video, ohne JavaScript und
+   bei „Bewegung reduzieren" bleibt es genau dabei, damit die Schrift immer
+   lesbar ist.
+
+   Läuft das Video, wird die Abdunklung im Takt zurückgenommen, damit man den
+   Clip sieht, wie er geliefert wurde:
+
+       0 – 3 s    hell, fast ohne Schleier
+       3 – 4 s    dunkelt ab
+       4 – 14 s   abgedunkelt wie bisher
+      14 – 15 s   hellt wieder auf, danach von vorn
+
+   Animiert wird ausschliesslich opacity. Das läuft auf dem Compositor und
+   kostet den Hauptthread nichts — anders als die frühere Animation über
+   background-position, die genau dafür verantwortlich war, dass das Video
+   geruckelt hat. */
+.stage.is-playing .stage__scrim {
+  animation: reveal 15s ease-in-out infinite;
+  /* Nur solange wirklich animiert wird: dann legt der Browser die Fläche auf
+     eine eigene Ebene und der Wechsel läuft auf der Grafikeinheit statt auf
+     dem Hauptthread. Dauerhaft gesetzt würde die Ebene unnötig Speicher
+     belegen. */
+  will-change: opacity;
+}
+
+@keyframes reveal {
+  0%     { opacity: .15; }
+  20%    { opacity: .15; }
+  26.7%  { opacity: 1; }
+  93.3%  { opacity: 1; }
+  100%   { opacity: .15; }
+}
+
+/* Wortmarke und Fließtext-Block wurden auf Wunsch aus dem Markup
+   entfernt (.logo, .subline, .cta-row/.btn im Headline-Block). Die Regeln
+   bleiben stehen: so lässt sich jedes Element mit einer Zeile HTML
+   zurückholen, ohne dass hier etwas rekonstruiert werden muss.
+
 /* =========================================================================
    Kopfzeile — Logo links, Einordnung rechts
    ========================================================================= */
 .masthead {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* Seit die Wortmarke entfallen ist, steht hier nur noch die Einordnung.
+     flex-end hält sie oben rechts, wo sie vorher schon stand — mit
+     space-between wäre sie nach links gerutscht. */
+  justify-content: flex-end;
   flex-wrap: wrap;
   gap: .75rem 1rem;
   /* viewport-fit=cover lässt die Seite bis unter Kamera-Aussparung und
@@ -287,7 +329,10 @@ a { color: inherit; }
   padding: .4rem .9rem;
   border: 1px solid var(--hairline);
   border-radius: var(--radius);
-  color: var(--text-dim);
+  /* Eigene Abdunklung: in der hellen Phase steht die Einordnung sonst auf dem
+     Sternenhimmel und ist kaum zu lesen. */
+  background: rgba(var(--scrim), .5);
+  color: rgba(246, 243, 236, .85);
   font-size: clamp(.66rem, .62rem + .16vw, .75rem);
   letter-spacing: .16em;
   text-transform: uppercase;
@@ -310,6 +355,11 @@ a { color: inherit; }
 .eyebrow {
   margin: 0;
   color: var(--gold);
+  /* Muss auch in der hellen Phase über dem Zeichentrickbild stehen: enger
+     dunkler Saum plus weicher Schein, sonst geht Gold auf Gold unter. */
+  text-shadow:
+    0 0 4px rgba(var(--scrim), .95),
+    0 1px 16px rgba(var(--scrim), .9);
   font-size: clamp(.7rem, .65rem + .2vw, .82rem);
   font-weight: 600;
   letter-spacing: .3em;
@@ -319,19 +369,27 @@ a { color: inherit; }
 
 .headline {
   margin: 0;
-  max-width: min(16ch, 100%);
+  /* Nur noch „Lachulus" steht in einer Zeile — acht Zeichen, plus etwas Luft
+     für die kursive Auszeichnung darunter. */
+  max-width: min(12ch, 100%);
   font-family: var(--font-display);
   font-weight: 700;
   /* Der Entwurf deckelt bei 92px. Etwas kräftiger, aber zusätzlich über die
-     Höhe gedeckelt — sonst schiebt die Headline auf flachen Fenstern den
-     CTA aus dem Bild. */
-  font-size: clamp(2.35rem, min(8.2vw, 17vh), 6.75rem);
+     Höhe gedeckelt. Der Höhendeckel ist jetzt strenger als vorher: die
+     Headline steht immer auf zwei Zeilen, zählt also doppelt. */
+  font-size: clamp(2.7rem, min(11vw, 15vh), 8.5rem);
   line-height: 1.02;
   letter-spacing: -.015em;
-  text-wrap: balance;
-  text-shadow: 0 2px 28px rgba(var(--scrim), .55);
+  /* Weicher Schein für die dunkle Phase, enger Saum für die helle. */
+  text-shadow:
+    0 0 6px rgba(var(--scrim), .55),
+    0 2px 28px rgba(var(--scrim), .55);
 }
+
+/* Erzwingt den Umbruch: „on Tour" steht immer unter „Lachulus", unabhängig
+   von der Fensterbreite. */
 .headline .accent {
+  display: block;
   color: var(--coral);
   font-style: italic;
 }
@@ -591,10 +649,17 @@ a { color: inherit; }
     transition-duration: .001ms !important;
     scroll-behavior: auto !important;
   }
+
+  /* Der Wechsel hell/dunkel würde hier auf den letzten Keyframe einrasten —
+     also auf „hell", und damit auf schlechten Kontrast. Deshalb bleibt die
+     Abdunklung fest stehen. */
+  .stage.is-playing .stage__scrim { animation: none !important; opacity: 1; }
 }
 
 @media (prefers-contrast: more) {
   .stage__scrim { background: rgba(var(--scrim), .78); }
+  /* Wer mehr Kontrast angefordert hat, will keine Phase mit fast keinem. */
+  .stage.is-playing .stage__scrim { animation: none; opacity: 1; }
   .subline, .footer__inner { color: var(--text); }
   .top-tag { border-color: var(--text); color: var(--text); }
 }
@@ -621,6 +686,18 @@ a { color: inherit; }
 @media (max-width: 46rem) {
   .top-tag { letter-spacing: .1em; padding: .35rem .7rem; }
   .pitch { gap: clamp(.5rem, 1.6vh, .95rem); }
+}
+
+/* --- Headline auf dem Handy ---------------------------------------------
+   Ab 650px abwärts wird die Headline deutlich grösser als die allgemeine
+   Formel hergibt: auf dem Handy ist sie das einzige grosse Element und darf
+   den Platz auch nehmen, seit Fliesstext und Schaltfläche entfallen sind.
+
+   Der vh-Anteil bleibt als Bremse drin, und die Regel für flache Fenster
+   weiter unten steht bewusst danach — im Querformat gewinnt weiterhin die
+   Höhe, sonst passt die Seite nicht mehr auf einen Bildschirm. */
+@media (max-width: 650px) {
+  .headline { font-size: clamp(2.9rem, min(13.5vw, 17vh), 5.5rem); }
 }
 
 /* --- Kleine Viewports --------------------------------------------------- */
@@ -707,11 +784,13 @@ a { color: inherit; }
   .footer__inner { padding-top: .55rem; padding-bottom: calc(.55rem + env(safe-area-inset-bottom, 0px)); }
 }
 
-/* Schmal UND flach zugleich: hier bricht die Headline auf zwei Zeilen um, und
-   zwei Zeilen mal Höhe sprengen den Bildschirm. Nur in diesem Fenster wird sie
-   zusätzlich gedeckelt — breite flache Fenster behalten ihre Größe. */
+/* Schmal UND flach zugleich. Der Deckel ist seit dem Wegfall von Fliesstext
+   und Schaltfläche deutlich lockerer: gemessen passen auf 320 x 480 bis zu
+   60px, begrenzt wird hier nicht mehr die Höhe, sondern die Breite von
+   „Lachulus". Die Untergrenze liegt bewusst gleichauf mit der Handy-Regel
+   weiter oben, damit ein kleines Hochkant-Handy nicht kleiner ausfällt. */
 @media (max-height: 40rem) and (max-width: 48rem) {
-  .headline { font-size: clamp(2rem, min(8.2vw, 12vh), 6.75rem); }
+  .headline { font-size: clamp(2.9rem, min(12vw, 15vh), 7.5rem); }
 }
 
 /* Erst wenn es wirklich eng wird, weicht die Subline. Sie gehört zum Entwurf
