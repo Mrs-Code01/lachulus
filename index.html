@@ -45,34 +45,66 @@
     Hintergrundvideo: autoplay, muted, loop, playsinline — wie im Briefing.
     Rein dekorativ, daher aria-hidden und ohne Bedienelemente. Selbst gehostet,
     kein YouTube-Embed, damit kein Cookie-Banner nötig wird.
+
+    Die Quellen stehen bewusst in data-src statt in src. Sonst holt der
+    Vorablese-Scanner des Browsers die Datei, noch bevor das Skript darunter
+    überhaupt läuft — und das Handy lädt erst die 2,4-MB-Desktopfassung und
+    danach nochmal die 1,1-MB-Handyfassung. Auf einer langsamen Verbindung ist
+    genau das der Grund, warum das Video hängt. Das Skript setzt src selbst,
+    dann wird genau eine Datei geholt.
+
     WebM steht vor MP4: der Browser nimmt die erste Quelle, die er abspielen
     kann, und WebM ist hier rund 40 % kleiner.
   -->
     <video class="stage__video" id="bg-video" poster="assets/img/poster.jpg" autoplay muted loop playsinline
       disablepictureinpicture tabindex="-1" aria-hidden="true">
-      <source id="src-webm" src="assets/video/lachulus-loop.webm" type="video/webm">
-      <source id="src-mp4" src="assets/video/lachulus-loop.mp4" type="video/mp4">
+      <source id="src-webm" type="video/webm"
+        data-src="assets/video/lachulus-loop.webm"
+        data-src-small="assets/video/lachulus-loop-mobile.webm">
+      <source id="src-mp4" type="video/mp4"
+        data-src="assets/video/lachulus-loop.mp4"
+        data-src-small="assets/video/lachulus-loop-mobile.mp4">
     </video>
+
+    <!-- Ohne JavaScript bleibt oben nur das Posterbild. Inhalt von <noscript>
+       wird bei aktivem JavaScript nicht als Markup gelesen, der Scanner holt
+       hier also nichts — abgeschaltet spielt die Desktopfassung wie bisher. -->
+    <noscript>
+      <video class="stage__video" poster="assets/img/poster.jpg" autoplay muted loop playsinline
+        disablepictureinpicture tabindex="-1" aria-hidden="true">
+        <source src="assets/video/lachulus-loop.webm" type="video/webm">
+        <source src="assets/video/lachulus-loop.mp4" type="video/mp4">
+      </video>
+    </noscript>
 
     <script>
       /*
-        Läuft synchron direkt nach dem Video-Element, also bevor der Browser mit
-        dem Laden beginnt. Zwei Aufgaben:
-    
-        1. Schmale Bildschirme bekommen die kleinere Fassung (854 × 480 statt
-           1280 × 720, rund ein Drittel der Bytes).
-        2. Bei „Bewegung reduzieren" werden die Quellen entfernt, bevor überhaupt
-           geladen wird — dann bleibt das Posterbild stehen.
-    
-        Ohne JavaScript passiert nichts davon: dann spielt schlicht die
-        Desktop-Fassung, weil sie im Markup steht.
+        Läuft direkt nach dem Video-Element und hat zwei Aufgaben.
+
+        Erstens die Quelle wählen: bei „Bewegung reduzieren" gar keine, auf
+        schmalen Bildschirmen die kleinere Fassung (854 × 480 statt 1280 × 720,
+        rund ein Drittel der Bytes), sonst die grosse.
+
+        Zweitens das Abspielen bewachen. Ein Hintergrundvideo, das nicht läuft,
+        fällt sofort auf — und Autoplay scheitert in der Praxis aus mehreren
+        Gründen, die alle nichts miteinander zu tun haben:
+
+          - iOS im Stromsparmodus sperrt Autoplay grundsätzlich. Kein Attribut
+            hilft dagegen; erst eine Berührung der Seite hebt die Sperre auf.
+          - Safari pausiert das Video, wenn der Tab in den Hintergrund geht
+            oder das Gerät sperrt, und startet von allein nicht wieder.
+          - Safari ab iOS 17.4 meldet VP9/WebM als abspielbar, liefert aber
+            nicht auf jedem Gerät ein Bild. Dann muss das MP4 einspringen.
+          - Auf schlechter Verbindung bleibt der Puffer stehen („stalled").
       */
       (function () {
         var video = document.getElementById('bg-video');
         var webm = document.getElementById('src-webm');
         var mp4 = document.getElementById('src-mp4');
-        if (!video || !window.matchMedia) return;
+        if (!video || !webm || !mp4 || !window.matchMedia) return;
 
+        /* Bewegung reduzieren: die Quellen fliegen raus, bevor sie je ein src
+           bekommen — es wird also kein einziges Byte Video geladen. */
         if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
           webm.remove();
           mp4.remove();
@@ -80,11 +112,81 @@
           return;
         }
 
-        if (matchMedia('(max-width: 820px)').matches) {
-          webm.src = 'assets/video/lachulus-loop-mobile.webm';
-          mp4.src = 'assets/video/lachulus-loop-mobile.mp4';
-          video.load();
+        var small = matchMedia('(max-width: 820px)').matches;
+        function pick(el) {
+          return (small && el.getAttribute('data-src-small')) || el.getAttribute('data-src');
         }
+        webm.src = pick(webm);
+        mp4.src = pick(mp4);
+
+        /* Safari übernimmt das muted-Attribut nach einem load() nicht
+           zuverlässig — und ohne muted verweigert jeder Browser das Autoplay. */
+        video.muted = true;
+        video.defaultMuted = true;
+
+        video.load();
+
+        function attempt() {
+          if (!video.paused) return;
+          var p = video.play();
+          /* Abgelehnte Zusage abfangen, sonst schreibt die Konsole bei jedem
+             gesperrten Autoplay einen unbehandelten Fehler. */
+          if (p && p.catch) p.catch(function () { });
+        }
+
+        /* Sobald genug Daten da sind — Safari startet sonst gelegentlich nicht,
+           obwohl autoplay im Markup steht. */
+        ['loadedmetadata', 'loadeddata', 'canplay'].forEach(function (ev) {
+          video.addEventListener(ev, attempt);
+        });
+
+        /* Rückkehr aus Hintergrund, Sperrbildschirm oder Vor-/Zurück-Cache. */
+        document.addEventListener('visibilitychange', function () {
+          if (!document.hidden) attempt();
+        });
+        window.addEventListener('pageshow', attempt);
+
+        /* Einmalig vom WebM auf das MP4 wechseln. */
+        var switched = false;
+        function fallbackToMp4() {
+          if (switched || !webm.parentNode) return;
+          switched = true;
+          webm.remove();
+          video.load();
+          attempt();
+        }
+
+        /* Stockender Puffer: höchstens zwei neue Anläufe, danach bleibt das
+           Posterbild stehen statt endlos nachzuladen. */
+        var retries = 0;
+        function recover() {
+          if (retries++ > 1) return;
+          video.load();
+          attempt();
+        }
+        video.addEventListener('stalled', recover);
+
+        /* Fehler einer <source> erreichen das Video nur in der Erfassungsphase,
+           deshalb capture = true. */
+        video.addEventListener('error', function () {
+          if (switched) recover(); else fallbackToMp4();
+        }, true);
+
+        /* Wächter: wer nach sechs Sekunden noch kein einziges Bild dekodiert
+           hat, bekommt das MP4 — das ist der WebM-Fall auf dem iPhone. */
+        setTimeout(function () {
+          if (video.readyState < 2) fallbackToMp4();
+        }, 6000);
+
+        /* Letzte Rettung für den iOS-Stromsparmodus: die erste Berührung der
+           Seite gibt das Abspielen frei. Einmalig und passiv, damit die Geste
+           selbst nicht ausgebremst wird. */
+        var once = { once: true, passive: true };
+        ['touchstart', 'pointerdown', 'keydown'].forEach(function (ev) {
+          document.addEventListener(ev, attempt, once);
+        });
+
+        attempt();
       })();
     </script>
 
