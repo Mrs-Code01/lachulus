@@ -42,31 +42,34 @@
     <div class="stage__sky" aria-hidden="true"></div>
 
     <!--
-    Hintergrundvideo: autoplay, muted, loop, playsinline — wie im Briefing.
-    Rein dekorativ, daher aria-hidden und ohne Bedienelemente. Selbst gehostet,
+    Hintergrundvideo: muted, loop, playsinline — wie im Briefing. Rein
+    dekorativ, daher aria-hidden und ohne Bedienelemente. Selbst gehostet,
     kein YouTube-Embed, damit kein Cookie-Banner nötig wird.
 
-    Nur noch H.264/MP4, kein WebM mehr. Gemessen wurde beides gegen dieselbe
-    nahezu verlustfreie Vorlage: auf gleicher Qualitätsstufe (SSIM 0,9927) ist
-    das MP4 4,0 MB gross, das VP9-WebM dagegen 5,1 MB. Bei der jetzt gefahrenen
-    Schärfe kostet WebM also Bytes, statt welche zu sparen — und H.264 wird
-    zusätzlich auf jedem Gerät in Hardware dekodiert, auch auf dem iPhone.
+    KEIN autoplay-Attribut, und das ist Absicht. Mit autoplay startet der
+    Browser, sobald er ein paar Sekunden im Puffer hat. Reicht die Leitung
+    dann nicht, läuft die Wiedergabe dem Puffer davon und das Video stockt —
+    gemessen: 2,7 Mbit/s Datenrate gegen 1–3,5 Mbit/s Leitung, das Video war
+    nach 18,9 s geladen und dauert 20 s. Genau daher kam das Ruckeln.
 
-    Die Quellen stehen bewusst in data-src statt in src. Sonst holt der
-    Vorablese-Scanner des Browsers die Datei, noch bevor das Skript darunter
-    überhaupt läuft — und das Handy lädt erst die grosse und danach nochmal die
-    kleine Fassung. Das Skript setzt src selbst, dann wird genau eine Datei
-    geholt.
+    Stattdessen startet das Skript unten erst, wenn die Datei durchgehend
+    gepuffert ist. Bis dahin steht das Posterbild — das ist das erste Bild der
+    Schleife, der Übergang ist also unsichtbar. Danach läuft die Schleife aus
+    dem Cache und kann gar nicht mehr stocken.
 
-    Neue Dateinamen (-v2): Videos werden laut .htaccess ein Jahr lang
-    zwischengespeichert. Ohne neuen Namen bekämen wiederkehrende Besucher
-    weiterhin die alte, unschärfere Fassung.
+    Die Quellen stehen in data-src statt src, damit der Vorablese-Scanner des
+    Browsers nicht schon die grosse Fassung holt, bevor das Skript die
+    passende auswählen konnte.
+
+    Neue Dateinamen (-v3): Videos werden dauerhaft zwischengespeichert
+    (vercel.json). Ohne neuen Namen bekämen wiederkehrende Besucher die alte
+    Fassung.
   -->
-    <video class="stage__video" id="bg-video" poster="assets/img/poster-v2.jpg" autoplay muted loop playsinline
-      disablepictureinpicture tabindex="-1" aria-hidden="true">
+    <video class="stage__video" id="bg-video" poster="assets/img/poster-v2.jpg" muted loop playsinline
+      preload="auto" disablepictureinpicture tabindex="-1" aria-hidden="true">
       <source id="src-mp4" type="video/mp4"
-        data-src="assets/video/lachulus-loop-v2.mp4"
-        data-src-small="assets/video/lachulus-loop-mobile-v2.mp4">
+        data-src="assets/video/lachulus-loop-v3.mp4"
+        data-src-small="assets/video/lachulus-loop-mobile-v3.mp4">
     </video>
 
     <!-- Ohne JavaScript bleibt oben nur das Posterbild. Inhalt von <noscript>
@@ -75,29 +78,29 @@
     <noscript>
       <video class="stage__video" poster="assets/img/poster-v2.jpg" autoplay muted loop playsinline
         disablepictureinpicture tabindex="-1" aria-hidden="true">
-        <source src="assets/video/lachulus-loop-v2.mp4" type="video/mp4">
+        <source src="assets/video/lachulus-loop-v3.mp4" type="video/mp4">
       </video>
     </noscript>
 
     <script>
       /*
-        Läuft direkt nach dem Video-Element und hat zwei Aufgaben.
+        Wählt die Quelle und startet die Wiedergabe — aber erst dann, wenn sie
+        garantiert durchläuft.
 
-        Erstens die Quelle wählen: bei „Bewegung reduzieren" gar keine, auf
-        schmalen Bildschirmen die kleinere Fassung, sonst die grosse. Beide
-        sind 1280 × 720 — auf dem Handy wird das Bild durch object-fit: cover
-        stark hochskaliert, eine 854 × 480-Fassung war dort sichtbar weich.
-        Unterschiedlich ist nur die Datenrate.
+        Warum so umständlich: ein Hintergrundvideo, das mitten in der Schleife
+        nachlädt, fällt sofort als Ruckeln auf. Der Browser startet von sich
+        aus, sobald „genug" im Puffer ist, und schätzt dabei die Leitung
+        optimistisch ein. Auf einer schwankenden Verbindung geht das schief.
 
-        Zweitens das Abspielen bewachen. Ein Hintergrundvideo, das nicht läuft,
-        fällt sofort auf — und Autoplay scheitert in der Praxis aus mehreren
-        Gründen, die alle nichts miteinander zu tun haben:
+        Deshalb: erst laden, dann starten. Sobald die Datei einmal vollständig
+        da ist, läuft die Schleife aus dem Cache — ab da ist Stocken technisch
+        ausgeschlossen.
 
-          - iOS im Stromsparmodus sperrt Autoplay grundsätzlich. Kein Attribut
-            hilft dagegen; erst eine Berührung der Seite hebt die Sperre auf.
-          - Safari pausiert das Video, wenn der Tab in den Hintergrund geht
-            oder das Gerät sperrt, und startet von allein nicht wieder.
-          - Auf schlechter Verbindung bleibt der Puffer stehen („stalled").
+        Dazu die üblichen Fallstricke beim Autoplay:
+          - iOS im Stromsparmodus sperrt es grundsätzlich; erst eine Berührung
+            der Seite hebt die Sperre auf.
+          - Safari pausiert beim Wechsel in den Hintergrund und startet von
+            allein nicht wieder.
       */
       (function () {
         var stage = document.querySelector('.stage');
@@ -109,18 +112,22 @@
            bekommt — es wird also kein einziges Byte Video geladen. */
         if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
           mp4.remove();
-          video.removeAttribute('autoplay');
           return;
         }
 
         var small = matchMedia('(max-width: 820px)').matches;
+        var url = small ? mp4.getAttribute('data-src-small') : mp4.getAttribute('data-src');
+        mp4.remove();
 
         /* Safari übernimmt das muted-Attribut nach einem load() nicht
-           zuverlässig — und ohne muted verweigert jeder Browser das Autoplay. */
+           zuverlässig — und ohne muted verweigert jeder Browser das Abspielen
+           ohne Nutzergeste. */
         video.muted = true;
         video.defaultMuted = true;
 
-        function attempt() {
+        var started = false;
+
+        function play() {
           if (!video.paused) return;
           var p = video.play();
           /* Abgelehnte Zusage abfangen, sonst schreibt die Konsole bei jedem
@@ -128,59 +135,91 @@
           if (p && p.catch) p.catch(function () { });
         }
 
+        function begin() {
+          if (started) return;
+          started = true;
+          play();
+        }
+
+        /* Die Datei wird komplett geladen und erst dann abgespielt.
+
+           Der naheliegende Weg — src setzen, autoplay, den Browser puffern
+           lassen — geht hier schief, gleich zweimal:
+
+           1. Mit autoplay startet der Browser, sobald er „genug" im Puffer
+              wähnt. Auf einer schwankenden Leitung läuft die Wiedergabe dem
+              Puffer davon, und das Video stockt. Genau das war der Fehler.
+           2. Einfach auf einen vollen Puffer zu warten, hilft nicht: Browser
+              brechen das Vorausladen bei einem Video, das nicht läuft,
+              bewusst ab. Gemessen war die Datei auch nach 40 Sekunden auf
+              einer 3-Mbit-Leitung nie vollständig gepuffert.
+
+           Deshalb wird die Datei per fetch() am Stück geholt und als Blob an
+           das Video gegeben. Ab dann liegt sie vollständig im Speicher — die
+           Wiedergabe kann technisch nicht mehr nachladen und damit auch nicht
+           mehr ruckeln. Bis dahin steht das Posterbild, und das ist das erste
+           Bild der Schleife: der Übergang ist unsichtbar.
+
+           Der Browser-Cache greift dabei normal, und weil vercel.json die
+           Videos unbefristet zwischenspeichern lässt, fällt der Ladevorgang
+           beim zweiten Besuch ganz weg. */
+        function playFromMemory() {
+          if (!window.fetch || !window.URL || !URL.createObjectURL) return playDirect();
+          fetch(url, { credentials: 'same-origin' })
+            .then(function (r) {
+              if (!r.ok) throw new Error(r.status);
+              return r.blob();
+            })
+            .then(function (blob) {
+              video.src = URL.createObjectURL(blob);
+              video.load();
+              begin();
+            })
+            .catch(playDirect);
+        }
+
+        /* Rückfallebene, falls fetch scheitert: dann eben direkt — lieber ein
+           Video, das eventuell nachlädt, als gar keines. */
+        var fellBack = false;
+        function playDirect() {
+          if (fellBack) return;
+          fellBack = true;
+          video.src = url;
+          video.load();
+          video.addEventListener('canplay', begin);
+          begin();
+        }
+
+        ['loadeddata', 'canplay', 'canplaythrough'].forEach(function (ev) {
+          video.addEventListener(ev, function () { if (started) play(); });
+        });
+
         /* Läuft das Video, ist die Farbfläche darunter vollständig verdeckt.
            Die Klasse hält deren Animation an und startet den Wechsel zwischen
            heller und abgedunkelter Phase. */
         video.addEventListener('playing', function () {
           if (stage) stage.classList.add('is-playing');
         });
-        ['error', 'emptied'].forEach(function (ev) {
-          video.addEventListener(ev, function () {
-            if (stage) stage.classList.remove('is-playing');
-          });
+        video.addEventListener('emptied', function () {
+          if (stage) stage.classList.remove('is-playing');
         });
 
-        /* Sobald genug Daten da sind — Safari startet sonst gelegentlich nicht,
-           obwohl autoplay im Markup steht. */
-        ['loadedmetadata', 'loadeddata', 'canplay'].forEach(function (ev) {
-          video.addEventListener(ev, attempt);
-        });
-
-        /* Rückkehr aus Hintergrund, Sperrbildschirm oder Vor-/Zurück-Cache. */
+        /* Rückkehr aus Hintergrund, Sperrbildschirm oder Vor-/Zurück-Cache:
+           nur weiterlaufen lassen, was schon einmal gestartet war. */
         document.addEventListener('visibilitychange', function () {
-          if (!document.hidden) attempt();
+          if (!document.hidden && started) play();
         });
-        window.addEventListener('pageshow', attempt);
-
-        /* Stockender Puffer: höchstens zwei neue Anläufe, danach bleibt das
-           Posterbild stehen statt endlos nachzuladen. */
-        var retries = 0;
-        function recover() {
-          if (retries++ > 1) return;
-          video.load();
-          attempt();
-        }
-        video.addEventListener('stalled', recover);
-        video.addEventListener('error', recover, true);
-
-        /* Wächter: wer nach acht Sekunden noch kein einziges Bild dekodiert
-           hat, bekommt einen neuen Anlauf. Grosszügiger als früher, weil die
-           Datei jetzt schärfer und damit grösser ist. */
-        setTimeout(function () {
-          if (video.readyState < 2) recover(); else attempt();
-        }, 8000);
+        window.addEventListener('pageshow', function () { if (started) play(); });
 
         /* Letzte Rettung für den iOS-Stromsparmodus: die erste Berührung der
            Seite gibt das Abspielen frei. Einmalig und passiv, damit die Geste
            selbst nicht ausgebremst wird. */
         var once = { once: true, passive: true };
         ['touchstart', 'pointerdown', 'keydown'].forEach(function (ev) {
-          document.addEventListener(ev, attempt, once);
+          document.addEventListener(ev, function () { if (started) play(); }, once);
         });
 
-        mp4.src = small ? mp4.getAttribute('data-src-small') : mp4.getAttribute('data-src');
-        video.load();
-        attempt();
+        playFromMemory();
       })();
     </script>
 
