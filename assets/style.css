@@ -152,7 +152,10 @@ a { color: inherit; }
      Inhalt. Auf niedrigen Fenstern wüchse die Bühne sonst über die
      Bildschirmhöhe hinaus, die Seite bekäme eine Bildlaufleiste, und der CTA
      spränge beim Klick auf #kontakt in diesen Rest hinein. */
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* Zwei Zeilen: Headline-Block (dehnbar) und Fußleiste. Die Kopfzeile ist
+     entfallen — bliebe hier eine dritte auto-Zeile stehen, rutschte der
+     Headline-Block in die Kopfzeilen-Zeile und die Fußleiste in die dehnbare. */
+  grid-template-rows: minmax(0, 1fr) auto;
   grid-template-columns: 100%;
   width: 100%;
   /* Drei Stufen, absteigend nach Alter des Browsers. Entscheidend ist die
@@ -288,56 +291,10 @@ a { color: inherit; }
   100%   { opacity: .15; }
 }
 
-/* Wortmarke und Fließtext-Block wurden auf Wunsch aus dem Markup
-   entfernt (.logo, .subline, .cta-row/.btn im Headline-Block). Die Regeln
-   bleiben stehen: so lässt sich jedes Element mit einer Zeile HTML
-   zurückholen, ohne dass hier etwas rekonstruiert werden muss.
+/* Kopfzeile, Wortmarke und Fließtext-Block sind auf Wunsch aus dem Markup
+   entfernt (.masthead/.top-tag, .logo, .subline, .cta-row/.btn). Die Regeln
+   dazu sind mit entfernt; die alte Fassung steht in der Git-Historie. */
 
-/* =========================================================================
-   Kopfzeile — Logo links, Einordnung rechts
-   ========================================================================= */
-.masthead {
-  display: flex;
-  align-items: center;
-  /* Seit die Wortmarke entfallen ist, steht hier nur noch die Einordnung.
-     flex-end hält sie oben rechts, wo sie vorher schon stand — mit
-     space-between wäre sie nach links gerutscht. */
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: .75rem 1rem;
-  /* viewport-fit=cover lässt die Seite bis unter Kamera-Aussparung und
-     Home-Leiste laufen. env() holt genau diesen Rand zurück. */
-  padding:
-    calc(clamp(1rem, 3vh, 1.75rem) + env(safe-area-inset-top, 0px))
-    calc(var(--pad) + env(safe-area-inset-right, 0px))
-    0
-    calc(var(--pad) + env(safe-area-inset-left, 0px));
-}
-
-.logo {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(1.15rem, 1rem + .7vw, 1.5rem);
-  letter-spacing: .04em;
-  line-height: 1;
-  text-decoration: none;
-  color: var(--text);
-}
-.logo span { color: var(--gold); }
-
-.top-tag {
-  padding: .4rem .9rem;
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius);
-  /* Eigene Abdunklung: in der hellen Phase steht die Einordnung sonst auf dem
-     Sternenhimmel und ist kaum zu lesen. */
-  background: rgba(var(--scrim), .5);
-  color: rgba(246, 243, 236, .85);
-  font-size: clamp(.66rem, .62rem + .16vw, .75rem);
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
 
 /* =========================================================================
    Headline-Block
@@ -661,7 +618,6 @@ a { color: inherit; }
   /* Wer mehr Kontrast angefordert hat, will keine Phase mit fast keinem. */
   .stage.is-playing .stage__scrim { animation: none; opacity: 1; }
   .subline, .footer__inner { color: var(--text); }
-  .top-tag { border-color: var(--text); color: var(--text); }
 }
 
 /* --- Mittlere Viewports: Tablet und schmales Desktop-Fenster ------------
@@ -682,9 +638,7 @@ a { color: inherit; }
   .footer__legal   { order: 2; justify-content: center; gap: .3rem 1rem; }
 }
 
-/* Die Einordnung neben dem Logo wird hier schmaler, statt umzubrechen. */
 @media (max-width: 46rem) {
-  .top-tag { letter-spacing: .1em; padding: .35rem .7rem; }
   .pitch { gap: clamp(.5rem, 1.6vh, .95rem); }
 }
 
@@ -706,13 +660,6 @@ a { color: inherit; }
      Stelle, die das Angebot beim Namen nennt. Statt sie auszublenden wird sie
      mit der Breite kleiner, damit sie neben der Wortmarke in einer Zeile
      bleibt statt umzubrechen. */
-  .masthead { column-gap: .6rem; }
-  .top-tag {
-    font-size: clamp(.52rem, .34rem + 1.05vw, .68rem);
-    letter-spacing: .05em;
-    padding: .3rem .5rem;
-  }
-
   .headline { max-width: min(13ch, 100%); }
   .subline { font-size: .95rem; }
 
@@ -733,33 +680,10 @@ a { color: inherit; }
   .icon-btn__short { display: inline; }
 }
 
-/* --- Einordnung unter die Wortmarke ------------------------------------
-   Ab 430px abwärts reicht die Zeile nicht mehr für Wortmarke und Einordnung
-   nebeneinander, ohne die Einordnung so weit zu schrumpfen, dass sie kaum
-   noch zu lesen ist. Sie rückt deshalb darunter — beide mittig, als zentriertes
-   Lockup aus Wortmarke und Einordnung. Auf der eigenen Zeile ist wieder Platz,
-   deshalb wird die Einordnung hier gleichzeitig wieder größer. */
-@media (max-width: 430px) {
-  .masthead {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: .5rem;
-  }
-
-  .top-tag {
-    font-size: clamp(.6rem, .42rem + .9vw, .72rem);
-    letter-spacing: .1em;
-    padding: .32rem .8rem;
-  }
-}
-
 /* --- Sehr schmale Geräte (ab iPhone SE abwärts) -------------------------
    Unter 23rem (368px) reicht die Breite für nichts mehr im Überfluss. Statt
    Elemente zu entfernen wird hier nur enger gesetzt. */
 @media (max-width: 23rem) {
-  .masthead { padding-left: calc(.9rem + env(safe-area-inset-left, 0px));
-              padding-right: calc(.9rem + env(safe-area-inset-right, 0px)); }
   .pitch { padding-left: .9rem; padding-right: .9rem; }
 
   .eyebrow { letter-spacing: .22em; }
@@ -800,12 +724,8 @@ a { color: inherit; }
 }
 
 @media (max-height: 30rem) {
-  /* Die Einordnung teilt sich die Zeile mit der Wortmarke und kostet hier
-     keine Höhe — sie bleibt also auch im Querformat stehen. */
-  .top-tag { font-size: .6rem; padding: .25rem .5rem; }
   .badges { gap: .35rem; }
   .badge { font-size: .72rem; padding: .3rem .7rem; }
-  .masthead { padding-top: .55rem; }
   .btn { padding: .52rem 1.2rem; }
   .cta-row { margin-top: .3rem; }
   .footer__inner { padding-top: .4rem; padding-bottom: calc(.4rem + env(safe-area-inset-bottom, 0px)); }

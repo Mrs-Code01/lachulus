@@ -4,9 +4,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Lachulus — On Tour Spring 2027</title>
+  <title>Lachulus — On Tour Summer 2027</title>
   <meta name="description"
-    content="Lachulus on Tour — Frühjahr 2027: neue Show, neue Videos, neue Bücher, neue App. Für Anfragen und Kooperationen.">
+    content="Lachulus on Tour — Sommer 2027: neue Show, neue Videos, neue Bücher, neue App. Für Anfragen und Kooperationen.">
   <meta name="theme-color" content="#0B0E17">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://www.lachulus.de/">
@@ -15,14 +15,14 @@
   <meta property="og:type" content="website">
   <meta property="og:locale" content="de_DE">
   <meta property="og:site_name" content="Lachulus">
-  <meta property="og:title" content="Lachulus — On Tour Spring 2027">
+  <meta property="og:title" content="Lachulus — On Tour Summer 2027">
   <meta property="og:description"
     content="Neue Show, neue Videos, neue Bücher, neue App — die nächste Staffel von Lachulus startet.">
   <meta property="og:url" content="https://www.lachulus.de/">
   <meta property="og:image" content="https://www.lachulus.de/assets/img/og-image.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Lachulus on Tour — Spring 2027">
+  <meta property="og:image:alt" content="Lachulus on Tour — Summer 2027">
   <meta name="twitter:card" content="summary_large_image">
 
   <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
@@ -46,34 +46,36 @@
     Rein dekorativ, daher aria-hidden und ohne Bedienelemente. Selbst gehostet,
     kein YouTube-Embed, damit kein Cookie-Banner nötig wird.
 
+    Nur noch H.264/MP4, kein WebM mehr. Gemessen wurde beides gegen dieselbe
+    nahezu verlustfreie Vorlage: auf gleicher Qualitätsstufe (SSIM 0,9927) ist
+    das MP4 4,0 MB gross, das VP9-WebM dagegen 5,1 MB. Bei der jetzt gefahrenen
+    Schärfe kostet WebM also Bytes, statt welche zu sparen — und H.264 wird
+    zusätzlich auf jedem Gerät in Hardware dekodiert, auch auf dem iPhone.
+
     Die Quellen stehen bewusst in data-src statt in src. Sonst holt der
     Vorablese-Scanner des Browsers die Datei, noch bevor das Skript darunter
-    überhaupt läuft — und das Handy lädt erst die 2,4-MB-Desktopfassung und
-    danach nochmal die 1,1-MB-Handyfassung. Auf einer langsamen Verbindung ist
-    genau das der Grund, warum das Video hängt. Das Skript setzt src selbst,
-    dann wird genau eine Datei geholt.
+    überhaupt läuft — und das Handy lädt erst die grosse und danach nochmal die
+    kleine Fassung. Das Skript setzt src selbst, dann wird genau eine Datei
+    geholt.
 
-    WebM steht vor MP4: der Browser nimmt die erste Quelle, die er abspielen
-    kann, und WebM ist hier rund 40 % kleiner.
+    Neue Dateinamen (-v2): Videos werden laut .htaccess ein Jahr lang
+    zwischengespeichert. Ohne neuen Namen bekämen wiederkehrende Besucher
+    weiterhin die alte, unschärfere Fassung.
   -->
-    <video class="stage__video" id="bg-video" poster="assets/img/poster.jpg" autoplay muted loop playsinline
+    <video class="stage__video" id="bg-video" poster="assets/img/poster-v2.jpg" autoplay muted loop playsinline
       disablepictureinpicture tabindex="-1" aria-hidden="true">
-      <source id="src-webm" type="video/webm"
-        data-src="assets/video/lachulus-loop.webm"
-        data-src-small="assets/video/lachulus-loop-mobile.webm">
       <source id="src-mp4" type="video/mp4"
-        data-src="assets/video/lachulus-loop.mp4"
-        data-src-small="assets/video/lachulus-loop-mobile.mp4">
+        data-src="assets/video/lachulus-loop-v2.mp4"
+        data-src-small="assets/video/lachulus-loop-mobile-v2.mp4">
     </video>
 
     <!-- Ohne JavaScript bleibt oben nur das Posterbild. Inhalt von <noscript>
        wird bei aktivem JavaScript nicht als Markup gelesen, der Scanner holt
        hier also nichts — abgeschaltet spielt die Desktopfassung wie bisher. -->
     <noscript>
-      <video class="stage__video" poster="assets/img/poster.jpg" autoplay muted loop playsinline
+      <video class="stage__video" poster="assets/img/poster-v2.jpg" autoplay muted loop playsinline
         disablepictureinpicture tabindex="-1" aria-hidden="true">
-        <source src="assets/video/lachulus-loop.webm" type="video/webm">
-        <source src="assets/video/lachulus-loop.mp4" type="video/mp4">
+        <source src="assets/video/lachulus-loop-v2.mp4" type="video/mp4">
       </video>
     </noscript>
 
@@ -82,8 +84,10 @@
         Läuft direkt nach dem Video-Element und hat zwei Aufgaben.
 
         Erstens die Quelle wählen: bei „Bewegung reduzieren" gar keine, auf
-        schmalen Bildschirmen die kleinere Fassung (854 × 480 statt 1280 × 720,
-        rund ein Drittel der Bytes), sonst die grosse.
+        schmalen Bildschirmen die kleinere Fassung, sonst die grosse. Beide
+        sind 1280 × 720 — auf dem Handy wird das Bild durch object-fit: cover
+        stark hochskaliert, eine 854 × 480-Fassung war dort sichtbar weich.
+        Unterschiedlich ist nur die Datenrate.
 
         Zweitens das Abspielen bewachen. Ein Hintergrundvideo, das nicht läuft,
         fällt sofort auf — und Autoplay scheitert in der Praxis aus mehreren
@@ -93,30 +97,23 @@
             hilft dagegen; erst eine Berührung der Seite hebt die Sperre auf.
           - Safari pausiert das Video, wenn der Tab in den Hintergrund geht
             oder das Gerät sperrt, und startet von allein nicht wieder.
-          - Safari ab iOS 17.4 meldet VP9/WebM als abspielbar, liefert aber
-            nicht auf jedem Gerät ein Bild. Dann muss das MP4 einspringen.
           - Auf schlechter Verbindung bleibt der Puffer stehen („stalled").
       */
       (function () {
         var stage = document.querySelector('.stage');
         var video = document.getElementById('bg-video');
-        var webm = document.getElementById('src-webm');
         var mp4 = document.getElementById('src-mp4');
-        if (!video || !webm || !mp4 || !window.matchMedia) return;
+        if (!video || !mp4 || !window.matchMedia) return;
 
-        /* Bewegung reduzieren: die Quellen fliegen raus, bevor sie je ein src
-           bekommen — es wird also kein einziges Byte Video geladen. */
+        /* Bewegung reduzieren: die Quelle fliegt raus, bevor sie je ein src
+           bekommt — es wird also kein einziges Byte Video geladen. */
         if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          webm.remove();
           mp4.remove();
           video.removeAttribute('autoplay');
           return;
         }
 
         var small = matchMedia('(max-width: 820px)').matches;
-        function pick(el) {
-          return (small && el.getAttribute('data-src-small')) || el.getAttribute('data-src');
-        }
 
         /* Safari übernimmt das muted-Attribut nach einem load() nicht
            zuverlässig — und ohne muted verweigert jeder Browser das Autoplay. */
@@ -132,8 +129,8 @@
         }
 
         /* Läuft das Video, ist die Farbfläche darunter vollständig verdeckt.
-           Die Klasse hält deren Animation an — das spart auf schwacher
-           Hardware den gesamten Aufwand für etwas Unsichtbares. */
+           Die Klasse hält deren Animation an und startet den Wechsel zwischen
+           heller und abgedunkelter Phase. */
         video.addEventListener('playing', function () {
           if (stage) stage.classList.add('is-playing');
         });
@@ -155,16 +152,6 @@
         });
         window.addEventListener('pageshow', attempt);
 
-        /* Einmalig vom WebM auf das MP4 wechseln. */
-        var switched = false;
-        function fallbackToMp4() {
-          if (switched) return;
-          switched = true;
-          if (webm.parentNode) webm.remove();
-          video.load();
-          attempt();
-        }
-
         /* Stockender Puffer: höchstens zwei neue Anläufe, danach bleibt das
            Posterbild stehen statt endlos nachzuladen. */
         var retries = 0;
@@ -174,18 +161,14 @@
           attempt();
         }
         video.addEventListener('stalled', recover);
+        video.addEventListener('error', recover, true);
 
-        /* Fehler einer <source> erreichen das Video nur in der Erfassungsphase,
-           deshalb capture = true. */
-        video.addEventListener('error', function () {
-          if (switched) recover(); else fallbackToMp4();
-        }, true);
-
-        /* Wächter: wer nach sechs Sekunden noch kein einziges Bild dekodiert
-           hat, bekommt das MP4. */
+        /* Wächter: wer nach acht Sekunden noch kein einziges Bild dekodiert
+           hat, bekommt einen neuen Anlauf. Grosszügiger als früher, weil die
+           Datei jetzt schärfer und damit grösser ist. */
         setTimeout(function () {
-          if (video.readyState < 2) { if (switched) attempt(); else fallbackToMp4(); }
-        }, 6000);
+          if (video.readyState < 2) recover(); else attempt();
+        }, 8000);
 
         /* Letzte Rettung für den iOS-Stromsparmodus: die erste Berührung der
            Seite gibt das Abspielen frei. Einmalig und passiv, damit die Geste
@@ -195,61 +178,16 @@
           document.addEventListener(ev, attempt, once);
         });
 
-        function start(useWebm) {
-          if (useWebm) {
-            webm.src = pick(webm);
-          } else {
-            switched = true;
-            webm.remove();
-          }
-          mp4.src = pick(mp4);
-          video.load();
-          attempt();
-        }
-
-        /*
-          VP9 lohnt sich nur dort, wo die Grafikeinheit es selbst dekodiert.
-          iPhones haben keinen VP9-Decoder in Hardware: Safari meldet die Datei
-          zwar als abspielbar, rechnet sie dann aber auf der CPU — daher das
-          Ruckeln und der heisse Akku. mediaCapabilities beantwortet genau
-          diese Frage: powerEfficient sagt, ob in Hardware dekodiert wird,
-          smooth, ob es die Bildrate hält.
-
-          Ist die Abfrage nicht vorhanden oder unsicher, gewinnt H.264. Das
-          dekodiert praktisch jedes Gerät seit Jahren in Hardware — 250 kB
-          mehr auf dem Handy sind der Preis für ein Video, das nicht stockt.
-        */
-        var mc = navigator.mediaCapabilities;
-        if (mc && mc.decodingInfo) {
-          mc.decodingInfo({
-            type: 'file',
-            video: {
-              contentType: small ? 'video/webm; codecs="vp09.00.30.08"'
-                                 : 'video/webm; codecs="vp09.00.31.08"',
-              width: small ? 854 : 1280,
-              height: small ? 480 : 720,
-              bitrate: small ? 440000 : 1000000,
-              framerate: 24
-            }
-          }).then(function (info) {
-            start(!!(info && info.supported && info.smooth && info.powerEfficient));
-          }, function () {
-            start(false);
-          });
-        } else {
-          start(false);
-        }
+        mp4.src = small ? mp4.getAttribute('data-src-small') : mp4.getAttribute('data-src');
+        video.load();
+        attempt();
       })();
     </script>
 
     <div class="stage__scrim" aria-hidden="true"></div>
 
-    <header class="masthead">
-      <p class="top-tag">Kinder- &amp; Familienunterhaltung</p>
-    </header>
-
     <div class="pitch">
-      <p class="eyebrow">Spring 2027</p>
+      <p class="eyebrow">Summer 2027</p>
 
       <!-- Zwei Zeilen, bewusst fest umgebrochen: „on Tour" gehört unter
          „Lachulus" und soll nicht mit der Fensterbreite hin und her springen.
