@@ -360,10 +360,13 @@ a { color: inherit; }
   text-wrap: pretty;
 }
 
-/* Vier gleichrangige Neuheiten, je ein Akzent — wie im Entwurf. */
+/* Vier gleichrangige Neuheiten, je ein Akzent — wie im Entwurf.
+   Raster statt Flex: vier gleich breite Spalten, die sich alle an der
+   längsten Beschriftung („New Videos“) ausrichten. Damit sind die vier
+   Schilder exakt gleich gross statt jeweils so breit wie ihr eigener Text. */
 .badges {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   justify-content: center;
   gap: .55rem;
   margin: .25rem 0 0;
@@ -373,6 +376,9 @@ a { color: inherit; }
 }
 
 .badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: .5rem 1.1rem;
   border-radius: var(--radius);
   color: var(--bg);
@@ -380,6 +386,7 @@ a { color: inherit; }
   font-weight: 600;
   letter-spacing: .03em;
   white-space: nowrap;
+  text-align: center;
 }
 .badge:nth-child(1) { background: var(--gold); }
 .badge:nth-child(2) { background: var(--coral); }
@@ -665,7 +672,7 @@ a { color: inherit; }
 
   /* Zwei mal zwei statt drei plus einer — ein allein stehendes Schild
      unter einer vollen Zeile sieht nach Umbruchunfall aus. */
-  .badges { max-width: 19rem; }
+  .badges { grid-template-columns: repeat(2, 1fr); max-width: 19rem; }
 
   .cta-row { width: 100%; flex-direction: column; align-items: stretch; }
   .btn { justify-content: center; }

@@ -34,14 +34,14 @@ Seite ist ohne diese Dateien voll funktionsfähig.
 | --- | --- |
 | Social-Media-Vorschaubild | `assets/img/og-image.jpg`, 1200 × 630 |
 | Finales Logo | ersetzt die Wortmarke in `index.html`, siehe unten |
-| USt-IdNr., Registereintrag | `impressum.html`, gelb markierte Hinweiskästen |
-| Hosting-Anbieter | `datenschutz.html`, Abschnitt 3 |
 | Endgültige Rechtstexte | ersetzen den Inhalt von `impressum.html` und `datenschutz.html` |
 
-Die gelb markierten Hinweiskästen in den Rechtstexten sind **auf der Seite
-sichtbar**. Das ist Absicht: ein Impressum mit stillschweigend fehlender
-USt-IdNr. wäre abmahnfähig, ein übersehener Platzhalter fällt dagegen sofort
-auf. Vor dem Livegang bitte alle Kästen (`<div class="note">…</div>`) entfernen.
+USt-IdNr., Registereintrag und Hosting-Anbieter sind eingetragen
+beziehungsweise geklärt: die USt-IdNr. steht im Impressum, der Registereintrag
+entfällt (Einzelunternehmen ohne Handelsregistereintrag), als Hosting-Anbieter
+ist IONOS in Abschnitt 3 der Datenschutzerklärung benannt. Die früher gelb
+markierten Hinweiskästen (`<div class="note">…</div>`) sind damit alle
+entfernt; in den Rechtstexten steht kein sichtbarer Platzhalter mehr.
 
 ### Logo austauschen
 
